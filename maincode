@@ -1,0 +1,131 @@
+import os
+import sys
+import time
+import mysql.connector
+
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="anneysha"
+)
+
+cursor = mydb.cursor()
+cursor.execute(" create database if not exists mydb ")
+cursor.execute(" use mydb ")
+cursor.execute("CREATE TABLE if not exists filerecords(Start VARCHAR(255), Stop VARCHAR(255), Timestamp VARCHAR(255), Type VARCHAR(255))")    
+
+def main():
+    global file
+    global time
+    file()
+    menu()
+    choice = int(input(" Please choose between 1, 2 and 3. "))
+    if choice == 1:
+        rename = input(" Please enter new name with file extension (.txt, .csv, .pdf ....) ")
+        confirm()
+        folder = r"C:\Users\Nandita Sarkar\Desktop"
+        for file in os.listdir():
+            os.rename(os.path.join(folder, file), os.path.join(folder, rename))
+        #filenames.append(f)
+        #print(f)
+        #newname = os.rename(file, rename)
+        print(f" Your file has been renamed to {newname} ")
+        ts = time.gmtime()
+        time = time.strftime("%x %X", ts)
+        #renamedict = {'Start': file, 'Stop': rename, 'Timestamp': time, 'Type': 'Renamed the file'}
+        cursor.execute(" insert into filerecords values(?, ?, ?, 'Renamed')".format(file, rename, time))
+        mydb.commit()
+    elif choice == 2:
+        print (" Your file is going to be deleted.......... ")
+        confirm()
+        if os.path.exists("test.txt"):            # checking if file exists
+            os.remove("test.txt")                 # file is deleted
+            print(f" Your file {file} has been deleted. ")
+            ts = time.gmtime()
+            time = time.strftime("%x %X", ts)
+            renamedict = {'Start': file, 'Stop': 0, 'Timestamp': time, 'Type': 'Deleted the file'}
+            cursor.execute(" insert into filerecords values(?, '0', ?, 'Deleted')".format(file, time))
+            mydb.commit()
+        else:
+            print("The file does not exist")
+    elif choice == 3:
+            print("What records would you like to see?")
+            print(" 1. Renamed log ")
+            print(" 2. Deleted log ")
+            print(" 3. Created log ")
+            print(" 4. Full log ")
+            ask = input(" Please enter your choice 1, 2, 3, or 4: ")
+            if ask == '1':
+                print(" You requested to see the Renamed Files log. ")
+                cursor.execute(" select * from filerecords where Type = 'Renamed' ")
+                print(" Requested records have been printed. ")
+            elif ask == '2':
+                print(" You requested to see the Deleted Files log. ")
+                cursor.execute(" select * from filerecords where Type = 'Deleted' ")
+                print(" Requested records have been printed. ")
+            elif ask == '3':
+                print(" You requested to see the Created Files log. All the dummyfiles have been listed. ")
+                cursor.execute(" select * from filerecords where Type = 'Created' ")
+            elif ask == '4':
+                print(" You requested to see the full log. ")
+                cursor.execute(" select * from filerecords ")
+            else:
+                print(" Invalid key ")
+        
+    else:
+        print(" Entered choice is not listed in menu. Please try again. ")
+        menu()
+
+
+def menu():
+    print ("       M E N U       ")
+    print (" 1. Rename your file ")
+    print (" 2. Delete a file ")
+    print (" 3. See file records ")
+
+#############Sample file creation for demo#############
+## Delete the triple strings to create dummy file, else ignore ##
+
+def dummyfile():
+    global time
+    file = open("test.txt", 'w')
+    text = input("Enter text here")
+    a = file.write(text)
+    file.close()
+    print(" Dummy file has been created. ")
+    ts = time.gmtime()
+    time = time.strftime("%x %X", ts)
+    cursor.execute(" insert into filerecords values('0', 'test.txt', ?, 'Created')".format(time))
+    mydb.commit()
+
+#######################################################
+    
+def file():
+    askfile = input(" Do you wish to create a dummy file incase you don't want to modify your existing files? (Y/N) ")
+    if askfile.lower() == 'y':
+        dummyfile()
+    elif askfile.lower() == 'n' :
+        file = input(" Enter file name with extension, like .txt, .csv, .pdf etc. ")
+        return file
+    else:
+        pass
+'''
+def store():
+    count = 1
+    rec = "insert into filerecords values({count}, {start}, {file}, {time}, {type})"
+    cursor.execute(rec)
+    mydb.commit()
+'''
+    
+def confirm():
+    a = input(" Press Y to confirm your action. ")
+    if a.upper() == 'Y':
+        pass
+    else:
+        print(" The program has been killed. Please restart the code. ")
+        sys.exit()      
+
+main()
+
+mydb.close()
+
